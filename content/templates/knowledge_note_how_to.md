@@ -9,13 +9,13 @@ type: knowledge-note
 
 # {{Title}}
 
-## 🗒️Task:
+## Task:
 #todo/replace A description of the task that your readers are looking to accomplish.
 
-## 🛠️Prerequisites (if applicable): 
+## Prerequisites (if applicable):
 #todo/replace If you have different pricing tiers, this should include information about which products or pricing plans this how-to applies to.
 
-## 📝Instructions:
+## Instructions:
 #todo/replace
 -   Step 1
 -   Step 2
@@ -25,7 +25,7 @@ type: knowledge-note
 ## Outcome:
 #todo/replace What users can expect to happen after completing the steps in the how-to knowledge base article.
 
-## 📖Further reading
+## Further reading
 #todo/replace Links to related knowledge base articles or how-tos.
 
 ---

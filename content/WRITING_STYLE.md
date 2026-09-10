@@ -1,11 +1,11 @@
 # Writing Style
 
-Primary language: **{{PRIMARY_LANGUAGE}}** (keep established technical terms in English).
+Primary language: **Polish** (keep established technical terms in English).
 
 ## Voice
 
-- Write in {{VOICE_PERSON}}.
-- Tone: {{VOICE_FORMALITY}}.
+- Write in neutral third-person.
+- Tone: direct and practical.
 - Be concrete. Prefer short sentences and active voice. Cut filler.
 
 ## Structure
@@ -15,15 +15,7 @@ Primary language: **{{PRIMARY_LANGUAGE}}** (keep established technical terms in 
 - End substantial notes with a **Resources** / further-reading section.
 - One idea per note. Split when a note tries to cover two things.
 
-<!-- IF:emoji_headings -->
-## Heading emoji convention
 
-Use a leading emoji on section headings to signal their role:
-🚀 main message · 🎨 impressions · ☘️ impact · ✍️ quotes · 📒 summary ·
-🗒️ description · 🔗 links · 🧩 features · 📖 further reading.
-
-This is a convention, not a mandate — drop it for notes where it doesn't fit.
-<!-- /IF:emoji_headings -->
 
 ## Wikilinks
 
