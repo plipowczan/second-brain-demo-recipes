@@ -1,6 +1,6 @@
 ---
-updated: 2026-09-10T14:42:36Z
-total_notes: 2
+updated: 2026-09-10T15:30:00Z
+total_notes: 5
 ---
 # Vault Map
 
@@ -8,10 +8,14 @@ total_notes: 2
 | folder | notes | types | top-tags |
 |--------|------:|-------|----------|
 | REFERENCE | 2 | knowledge-note(2) | knowledge, example |
+| RECIPES | 3 | recipe-note(3) | recipe, wegetarianskie, makaron |
 
 ## Tag Cloud
-example:2 knowledge:2
+recipe:3 knowledge:2 example:2 wegetarianskie:2 makaron:2 kurczak:1 kuchnia-wloska:1 kuchnia-francuska:1 kuchnia-azjatycka:1
 
 ## Recent Changes
+- 2026-09-10 RECIPES/Makaron z pesto i kurczakiem (Szybki makaron wstążki z podsmażonym kurczakiem i domowym pesto bazyliowym, gotowy w 25 minut.)
+- 2026-09-10 RECIPES/Ratatuj - leczo warzywne (Francuskie leczo warzywne z cukinii, bakłażana i papryki, duszone w bulionie z koncentratem pomidorowym.)
+- 2026-09-10 RECIPES/Udon z sosem teriyaki i tofu (Japoński makaron udon z tofu, papryką i pieczarkami w sosie teriyaki, wegetariański, gotowy w ok. 30 minut.)
 - 2026-06-15 REFERENCE/Example Note (A worked example note showing the conventions this knowledge base uses.)
 - 2026-06-15 REFERENCE/Wikilinks Explained (How wikilinks resolve in this vault and why filenames must match link text.)
