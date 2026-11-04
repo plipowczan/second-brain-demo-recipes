@@ -1,0 +1,11 @@
+{
+  "KB_NAME": "Recipes Brain",
+  "KB_OWNER": "Paweł Lipowczan",
+  "PRIMARY_LANGUAGE": "Polish",
+  "MAIN_BRANCH": "main",
+  "VOICE_PERSON": "neutral third-person",
+  "VOICE_FORMALITY": "direct and practical",
+  "NOTE_TYPES": "basic-note | knowledge-note | recipe-note",
+  "emoji_headings": false,
+  "TOPIC_TABLE": "| `/content/RECIPES/` | Recipe notes (dishes, ingredients lists, steps) | Yes |\n| `/content/INGREDIENTS/` | Notes about individual ingredients (properties, substitutions, storage) | Yes |\n| `/content/TECHNIQUES/` | Cooking technique notes (methods, tools, tips) | Yes |"
+}
