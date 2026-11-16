@@ -5,6 +5,246 @@ who have cloned the template and want to pull improvements into their own base.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/). Dates are ISO (UTC).
 
+## [0.3.0] - 2026-11-13
+
+A quality package for what the agent writes into your base. Ingest now shows its plan
+before writing and updates every note a source touches. Contradictions are marked, not
+overwritten. Source paths can be checked, Q&A keeps its answers and their gaps, and a
+new `LIMITS.md` says where the method fails. The ideas came from
+[super-brain](https://github.com/superhero-tech/super-brain) by AI Product Heroes (MIT);
+the text and code are our own.
+
+Existing bases: run `/b:upgrade`. It brings the updated skills (`brain-ingest`,
+`brain-qa`, `brain-lint`, `brain-enhance`, `brain-compile`, `brain-gaps`,
+`brain-curate`), the scanners and their tests, the `kb-maintain` workflow, and the new
+`LIMITS.md`. It re-renders your `AGENTS.md` by default only when it recognises the file
+as unedited and your update crosses a **BREAKING** entry, as an update from before
+`0.2.0` does. Otherwise it changes that file only if you ask. Every rule also lives in
+the skills, so an edited `AGENTS.md` misses nothing. It never touches your note
+templates in `content/templates/`, your `README.md` or any note. After the upgrade, run
+`/b:lint`. Notes whose `source:` still points at `_raw/inbox/` show up as warnings, most
+of them with a ready `fix=` path. Fix them when it suits you; nothing is blocked. If you
+run `/b:ingest` or `/b:qa` without a person present, add `--batch` or `--no-save` (see
+below).
+
+### Added
+- **Lint finds source paths that lead nowhere, and proposes the fix.** Until now nothing
+  checked the `source:` a note points to, and ingest left many of them pointing at
+  `_raw/inbox/` after it had archived the file. `lint_scan.py` now reads `source:` and
+  the new `sources:` list (a single value, a block list or `["a", "b"]`, on one line or
+  several, with or without `# comments`) and reports every `_raw/` path that does not
+  exist, in the new `missing_source_file` class. When a missing `_raw/inbox/<name>` has
+  exactly one archived copy `_raw/processed/<date>_<name>`, the finding carries
+  `fix=<that path>`, ready to paste; with several copies (a copy ingest numbered because
+  the name was taken, such as `2026-10-20_talk-2.md`, counts) it lists them as
+  `candidates=` and proposes none. URLs, wikilinks and free-text sources such as "Call
+  with the vendor" are not paths and are skipped.
+- **Lint lists notes with open contradictions.** The new `contradiction` class names
+  every note that carries a `> [!contradiction]` callout, with the number of callouts.
+  Examples of the callout inside a code block do not count, also in a block opened with
+  four backticks to show triple-backtick Markdown.
+- **Both new classes are warnings.** The scanner's JSON gains a `warnings` list naming
+  them. They do not block the optional pre-commit hook, which still blocks only on
+  missing frontmatter and schema violations, and the weekly `kb-maintain` summary lists
+  them under "Warnings", apart from "Issues". Every existing class and field of the
+  scanner's output is unchanged, so scripts that read it keep working.
+- **`/b:gaps` lists the questions your vault could not answer.** `gaps.py` gains
+  `answer_gaps`: every saved answer in `content/_outputs/answers/` whose `gaps:` count is
+  above zero, newest first, with its title, date and count (`--answers DIR` points it
+  elsewhere). The `brain-gaps` skill adds them to its to-build list. Answers saved before
+  this release have no `gaps:` field and are skipped.
+- **`LIMITS.md`: where this method fails, and what to do about it.** A new file in the
+  root of your base names five failure modes and, for each, what you and the agent do:
+  errors that compound when answers are filed back into notes, citations that look like
+  proof, the context ceiling, the cost of every operation, and the whole base being one
+  model's reading of your sources. It ends with the reminder that a tidy base is not a
+  correct one. `/b:qa` and `/b:lint` read it before they say the base is sure of
+  anything. It is a template file: upgrades keep it current and keep your own additions.
+
+### Changed
+- **`/b:ingest` shows its plan before it writes, and updates every note a source is
+  about.** Ingest used to write first and ask only about clusters. Now it reads every
+  source, maps it against your notes and sends one message per run. For each source it
+  gives what the source claims in one sentence, the notes it will create, the existing
+  notes it will add to and what each gains, and the claims in your base the source
+  contradicts. The cluster question comes in the same message, so ingest still asks at
+  most once. Reply OK, correct the reading or a note to leave alone, or cancel. A source
+  no longer turns into one summary note: it gets a main note, and every existing note it
+  adds to gets the new material, the source reference and a link to the main note and
+  back. The report lists every note each source touched, and says why when only one
+  changed. Contradictions are marked with a `> [!contradiction]` callout next to the
+  earlier claim, which is never overwritten: you decide which claim holds.
+  `/b:ingest --batch` skips the question, says up front that batch notes come out
+  thinner because nobody corrects the reading, and keeps clustered sources as separate
+  notes. **If you run ingest without a person present** (a script, `claude -p`), it now
+  stops at the plan and writes nothing: add `--batch` to such runs.
+- **`/b:qa` saves substantive answers by default, with what they rest on and what your
+  vault could not answer.** It used to offer to save, so most answers were lost when the
+  session ended, and with them the questions your notes could not answer. Every
+  substantive answer is now saved to `content/_outputs/answers/YYYY-MM-DD_<topic>.md`
+  (an `answer-note`, never overwriting an earlier one), and the skill tells you the path.
+  The note has a section listing the notes the answer rests on and marking what is
+  inference, and a section of gaps: each part of the question your vault could not
+  answer, including contradictions it could not resolve. The headings follow your
+  base's language, and the number of gaps goes in a `gaps:` field, which `/b:gaps`
+  reads. A one-line lookup is not saved, and the skill says so. When a note carries a
+  `> [!contradiction]` callout, the answer shows both claims. Before it says your vault
+  is sure of anything, the skill reads `LIMITS.md` and names the limits that apply.
+  Promoting an answer with `/b:compile` or filing it back with `/b:enhance` is still
+  only offered. **To answer without writing,** pass `--no-save` or ask not to save. A
+  tool that queries your base without a person present should always pass `--no-save`,
+  or every question leaves a file behind.
+- **`/b:lint` says when it is too early, and every finding comes with a next step.**
+  Below 10 notes the skill says a lint would only find noise, gives the count and stops
+  without a report. Above that, every finding names the note and what to do: the edit or
+  the skill to run, such as the replacement for a stale source path. Warnings are
+  listed apart from issues, and the report ends with a "Fix first" list ordered by what
+  each fix unblocks. First come notes hidden from the other checks, then single fixes
+  that clear many findings, then the rest. A clean report now says that it means the
+  vault is in order, not that its content is true, and points to `LIMITS.md`.
+- **`/b:enhance` and `/b:compile` mark contradictions instead of smoothing them over.**
+  When material conflicts with what a note claims, both skills keep the earlier claim,
+  add a `> [!contradiction]` callout with both claims and their sources, and list it in
+  their summary. Enhance leaves an existing callout alone until you decide which claim
+  holds. Both record raw source files in `source:` or `sources:`, and `/b:curate` reads
+  tool URLs from either field.
+- **`AGENTS.md` points to `LIMITS.md` and shows `sources:`.** The instruction template
+  gets a short "Limits" section, and its frontmatter example now shows
+  `sources: ["_raw/processed/YYYY-MM-DD_filename.md"]` instead of an inbox path: the old
+  example is where many stale `_raw/inbox/` source paths came from. Only new bases and
+  bases that re-render an unedited `AGENTS.md` get this. Every rule it points to also
+  lives in the skills, so an edited `AGENTS.md` misses nothing.
+- **`README.md`: no source count, and a link to the course.** The line "good for ~500
+  sources" is gone, and the setup section links a step-by-step course.
+
+  Existing bases: nothing to do. `README.md` is yours and an upgrade never writes it. If
+  you want these lines, copy them by hand.
+
+### Fixed
+- **The weekly `kb-maintain` run no longer fails where it may not open a pull request,
+  and no longer fails on every run after its first.** GitHub lets a workflow open pull
+  requests only when the repository allows it, and that setting is off by default. So
+  the workflow pushed the refreshed indexes to `kb-maintenance/reindex`, then failed with
+  `GitHub Actions is not permitted to create or approve pull requests`, and GitHub sent a
+  failure notice. It now ends without an error: a warning and the run summary name the
+  setting (**Settings → Actions → General → Workflow permissions → Allow GitHub Actions to
+  create and approve pull requests**) and link the page where you open the pull request
+  by hand. Any other error still fails the run. The same step had a second fault: once a
+  run had pushed that branch, every later run was refused at the push (`stale info`),
+  because the checkout does not fetch the branch, so turning the setting on alone would
+  not have brought a pull request. The push now checks what the branch holds on GitHub
+  first. `README.md` and the `/b:onboard` handoff name the setting.
+
+  Existing bases: `/b:upgrade` brings the workflow (`.github/workflows/kb-maintain.yml`)
+  and the onboarding note. If your base is on GitHub, turn the setting on once; in a
+  repository owned by an organization, an owner may have to allow it in the
+  organization's settings first. If a refresh already waits on `kb-maintenance/reindex`,
+  the next run that finds the indexes out of date replaces it and opens the pull request;
+  to get it sooner, run **KB maintenance** from the **Actions** tab. `README.md` is yours and an upgrade never writes
+  it: copy the new "Weekly maintenance on GitHub" section by hand if you want it.
+- **Lint reads lists written without indentation.** `lint_scan.py` read a YAML list only
+  when its items were indented (`tags:` then `  - book`). Items written at the start of
+  the line (`tags:` then `- book`) are valid YAML, what PyYAML writes, and how
+  `build_indexes.py` already read them, but the scanner saw an empty field: such a note
+  was reported for missing tags, or for a schema violation that blocks the optional
+  pre-commit hook, and its `sources:` list was never checked. Both forms are now read
+  the same way. A note can only lose findings from this.
+- **Ingest records where the source file really ends up.** Ingest moved each inbox file
+  to `_raw/processed/YYYY-MM-DD_<name>` but left the note's `source:` pointing at
+  `_raw/inbox/<name>`. It corrected the path only for YouTube, so for files the reference
+  led nowhere. Ingest now chooses the archive name first (with `-2`, `-3` when the name
+  is taken) and writes that path into every note the source touches. A note that gains a
+  second source gets a `sources:` list, with its earlier `source:` first. Before
+  reporting, ingest checks that every path it wrote exists. Paths written by earlier
+  versions are not rewritten: `/b:lint` lists them, with the fix where one archived copy
+  exists.
+- **`/b:upgrade` no longer stops at its own plan step.** The skill passed the archive it
+  had just downloaded to `plan --source`. The engine counts every local zip as unverified,
+  so the default path ended in a refusal. The skill now runs `plan --to <version>`: the
+  engine downloads the release you agreed to over HTTPS, and the skill checks that the
+  commit is the one you were shown. A zip from elsewhere is still refused without your
+  consent, and a file placed next to it changes nothing.
+
+  Existing bases: a base on `0.2.x` still follows its own older skill for this one
+  update, so the first `plan` is refused once. The message names the way out (drop
+  `--source`, add `--to <version>`), and your agent can follow it. Updates after that use
+  the new skill. Nothing else is needed.
+- **Updates carry a file's executable bit.** `.githooks/pre-commit` is executable since
+  `0.2.0`, but updates compared content only, so a base from before `0.2.0` kept the old
+  mode. Git on Linux and macOS skips a hook that is not executable, and the `Tests`
+  workflow, which checks that hook, failed on Ubuntu. The plan now has an **Executable
+  bit** section for the files `.kb-manifest.json` lists under `executable`. A new or
+  updated file gets the bit as it is written, and adoption does the same. The bit is only
+  ever added. On a file you edited, your text stays and only the bit changes; you can
+  decline it with `"executable": false`.
+
+  Existing bases: `/b:upgrade` shows the row and sets the bit, also when the content
+  already equals the release, so a base that went through `0.2.x` is covered too. If your
+  clone uses `.githooks` (`git config core.hooksPath .githooks`), a hook that git skipped
+  until now starts to run on Linux and macOS, and blocks a commit with a note the check
+  rejects.
+- **An untouched `AGENTS.md` follows a breaking release.** The agent reads this file in
+  every session, but it was re-rendered only on request, so after a breaking change it
+  could keep describing the old setup. When the versions you update across include a
+  breaking entry, `/b:upgrade` now re-renders an untouched `AGENTS.md` by default.
+  `content/WRITING_STYLE.md` and `CLAUDE.md` stay on request.
+
+  Existing bases: nothing to do. An `AGENTS.md` you edited is never overwritten: the plan
+  says so and you compare it by hand. To keep an untouched copy as it is, answer no
+  (`"rerender": []`). A base already past that release can ask for it with `--rerender`.
+- **The plan names a file the template renamed under your edits.** When the template
+  moves a file you edited, your copy stays at the old path, and the plan only said
+  "removed from the template". It now also lists `old -> new` under **Renamed by the
+  template**. Your edits still don't move on their own, and the skill at the old path
+  stays in use until you carry them over. The match is a guess from the two paths and
+  only produces this line.
+
+  Existing bases: nothing to do. The section appears when it applies.
+- **Undoing an update is documented in the right order.** Undo the newest commit first:
+  the upgrade, then the adoption. Reverting the adoption alone runs into conflicts. A
+  reverted adoption also removes `.kb-onboard.json` from your disk if it was the commit
+  that added it, and `.gitignore` hides that, so `README.md` and the `brain-upgrade` skill
+  now give the command that brings the file back.
+
+  Existing bases: `/b:upgrade` brings the note in the skill. Nothing else is needed.
+- **`/b:ingest` hands yt-dlp only the video it checked.** `yt_fetch.py` read the video id
+  from the URL you pasted, then passed that URL on, so yt-dlp could pick another video
+  from `?v=A&v=B`, or go through a whole playlist from `&list=`. It now gets a URL built
+  from the checked id. The fallback that runs yt-dlp as a Python module also leaves the
+  current folder out of its search, so a stray `yt_dlp.py` in your base no longer runs in
+  its place.
+
+  Existing bases: `/b:upgrade` brings the fix (`brain-ingest`: `SKILL.md`,
+  `scripts/yt_fetch.py` and its tests). Nothing else is needed.
+- **YouTube ingest finds the captions of videos with dubbed audio.** A video with dubbed
+  audio tracks has an auto-caption transcript per dub, and yt-dlp lists every one of
+  them, machine-translated, under the plain language code. Asking for `en` downloaded the
+  last of those: for one video, its Ukrainian dub translated back into English. YouTube
+  usually refuses such translations with `HTTP 429`, and every other language failed the
+  same way, so `/b:ingest` stopped with `No captions and whisper.cpp not configured`
+  although English captions existed. `yt_fetch.py` now picks the languages from the
+  video's metadata. For each preferred language (`en`, `en-US`, `en-GB`, `pl`) it takes
+  manual subtitles first, then the original-language transcript (`en-orig`), then the
+  plain code as before. The video's own original language (`de-orig` for a German video)
+  is tried last when none of those matched. Videos with only plain `en` captions are
+  fetched as before.
+
+  Existing bases: pick it up with `/b:upgrade`, which updates the `brain-ingest` skill
+  (`scripts/yt_fetch.py` and its tests). Nothing else is needed.
+- **YouTube transcripts no longer repeat every line.** Auto-captions roll: each caption
+  shows the previous line again above the new one. `yt_fetch.py` joined both, so the
+  archived transcript of an auto-captioned video had every line two or three times
+  (`[0:01] A`, `[0:01] A B`, `[0:03] B`, …). It now keeps each line once, at the time it
+  starts. Two smaller faults in the same parser are fixed too: HTML entities are decoded
+  (`S&amp;P` is now `S&P`), and a line that opens a caption block, such as the first line
+  of the video, gets its own start time instead of the time it ends. Manual subtitles
+  come out as before.
+
+  Existing bases: `/b:upgrade` brings the fix (the same files as above). Transcripts
+  already in `content/_raw/processed/` keep their repeated lines; the notes written from
+  them are not affected. For a clean copy, re-run `yt_fetch.py <url> --out-dir <a temp
+  folder>` and replace the transcript below the archive's frontmatter.
+
 ## [0.2.1] - 2026-10-15
 
 ### Fixed
