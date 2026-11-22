@@ -3,5 +3,12 @@ node_modules/
 *.log
 __pycache__/
 *.pyc
-.kb-onboard.json
 content/.obsidian/workspace*.json
+
+# Private terms that must not even be committed (read by /b:watch and /b:export --public)
+# and the watch workspaces
+content/_privacy.local.md
+content/_raw/research-workspaces/watch-*/
+
+# Personal Claude Code instructions for this checkout (see CONTRIBUTING.md)
+CLAUDE.local.md
