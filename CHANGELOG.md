@@ -5,6 +5,192 @@ who have cloned the template and want to pull improvements into their own base.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/). Dates are ISO (UTC).
 
+## [0.4.1] - 2026-11-22
+
+A patch release. An untouched `AGENTS.md` now follows every change to its template, and
+YouTube transcripts keep lines that a manual subtitle track repeats. On Windows with
+Python 3.11 or older, `/b:upgrade` now also refuses to write through a junction.
+
+### Fixed
+- **An untouched `AGENTS.md` follows every change to its template.** `/b:upgrade`
+  re-rendered `AGENTS.md` by default only when the versions it crossed held an entry
+  marked breaking, and neither `0.3.0` nor `0.4.0` has one. So a base that went through
+  the `0.2.0` command rename with an older engine still listed `/ingest` instead of
+  `/b:ingest`, and no base got the `0.4.0` sentence about `/b:<name>` in Codex unless the
+  owner asked for a re-render. Now the plan re-renders an untouched `AGENTS.md` whenever
+  its template differs from the one it was rendered from, whatever the versions hold.
+  The plan says so, and you can still keep the file (`"rerender": []`); the next upgrade
+  asks again. A file you edited is never written: you get the difference as a proposal,
+  as before. `CLAUDE.md` and `content/WRITING_STYLE.md` still change only when you ask.
+  The plan now also tells the two kinds of proposal apart: `edited by hand`, or `not
+  provably untouched` when the base was adopted from an older rendering of `AGENTS.md` and
+  the stamp has no output hash for it.
+
+  Existing bases: nothing to do. The upgrade to the release that carries this fix brings
+  `AGENTS.md` up to date if you never edited it. If the plan calls your `AGENTS.md` `not
+  provably untouched` and you never edited it, or do not need your edits, take the
+  proposal whole once: copy `render/AGENTS.md` from the plan's payload folder over
+  `AGENTS.md`, commit, and plan again. From then on upgrades keep it current. The
+  `brain-upgrade` skill offers this step.
+- **YouTube transcripts keep lines that a manual subtitle track repeats.** Since `0.3.0`,
+  `yt_fetch.py` dropped any line a caption repeated from the caption before it. That is
+  right for auto-captions, which roll and show each line twice, but a manual track that
+  opened a caption with the previous caption's last line lost it: `A / B` then `B / C`
+  became `A B` and `C`. Now only a track with the word timings that auto-captions carry
+  is treated as rolling. Every other track keeps all its lines, and only a caption that
+  repeats the previous one whole is merged, as before `0.3.0`.
+
+  Existing bases: `/b:upgrade` brings the fix (`brain-ingest`: `scripts/yt_fetch.py` and
+  its tests). Transcripts already in `content/_raw/processed/` stay as they are. For the
+  full text of a video with manual subtitles, re-run `yt_fetch.py <url> --out-dir <a temp
+  folder>` and replace the transcript below the archive's frontmatter.
+
+### Security
+- **`/b:upgrade` sees Windows junctions on Python 3.11 and older too.** The upgrade
+  refuses to read or write through a symbolic link or a Windows junction, so that a link
+  can never lead it into your notes under `content/`. It recognised a junction only
+  through `os.path.isjunction`, which Python has had since 3.12. On Windows with Python
+  3.11 or older a junction went unnoticed: with `.claude/hooks` as a junction into
+  `content/`, the dry run did not stop, and `apply` could write the template's files
+  through it into your notes. Symbolic links were caught on every Python, and Linux and
+  macOS have no junctions. The check now reads the junction mark itself, on every Python.
+  The template's tests now also run on Windows with Python 3.11, so a function that older
+  Pythons lack shows up as a failing test.
+
+  Existing bases: nothing to do before you upgrade. `/b:upgrade` runs the engine of the
+  version it installs, so the upgrade to this version already checks junctions. The
+  `Tests` workflow it brings runs a third job, Windows with Python 3.11, on each push to
+  `main` and each pull request; delete that `include:` entry in
+  `.github/workflows/tests.yml` if you don't want it. If you upgraded on Windows with
+  Python 3.11 or older and keep junctions in your base, list them from the base's root
+  folder in PowerShell with
+  `Get-ChildItem -Recurse -Force -Attributes ReparsePoint | Select-Object FullName, LinkType, Target`.
+  A junction among the template's own files (under `.claude/`, `.agents/`, `.github/` and
+  the like) that points into `content/` may have let an earlier upgrade overwrite the
+  notes there: check those notes with `git status` and `git log` and restore any change
+  you did not make.
+
+## [0.4.0] - 2026-11-16
+
+Codex gets the template's skills and its session hook, from the same files Claude Code
+reads, and `/b:watch` keeps tool notes current. Two skill descriptions are read whole
+again, and the public export and the watch report hold back private names more reliably.
+
+### Added
+- **Codex gets the skills and the session hook.** Codex reads `AGENTS.md`, but not
+  `.claude/skills/` or `.claude/settings.json`, so in Codex a base had its instructions
+  and none of its workflows. Now each skill has a stub at
+  `.agents/skills/<skill>/SKILL.md`, where Codex looks: the skill's frontmatter, unchanged,
+  and one instruction, to read and follow `.claude/skills/<skill>/SKILL.md`. Each skill
+  keeps one text, for both agents, and its scripts stay where they are.
+  `.codex/hooks.json` runs the same `.claude/hooks/load_vault_map.py` as Claude Code, by a
+  relative path, so the vault map loads in the root folder of any clone, and of a base
+  downloaded as a ZIP. In Codex, start a skill by name, `$brain-ingest` for `/b:ingest`,
+  or pick it from `/skills`. `ENVIRONMENTS.md` has the details, including what was tried
+  with the `brain-research*` skills, which Codex runs with its own subagents and question
+  form. Claude Code does not read the new files. The template's own tests fail when a stub or the hook file is out of
+  date; in a base, `tests/run_tests.py` only names that check in its SKIP line.
+
+  Existing bases: `/b:upgrade` adds one stub per skill and `.codex/hooks.json`, which
+  Claude Code does not read. Keep them even if you never use Codex: deleting them brings
+  back a `restore?` row at every upgrade. To use Codex, open the base's root folder in it,
+  trust the project and approve the hook in `/hooks`, once per clone. After you add a
+  skill or edit a skill's description, edit its stub by hand (`ENVIRONMENTS.md` shows the
+  file); an edit to a skill's body needs nothing. `AGENTS.template.md` now tells an agent
+  without slash commands to read `/b:<name>` as the `brain-<name>` skill; your `AGENTS.md`
+  gets that sentence only when you re-render it. If you deleted a template skill, the
+  upgrade adds its stub anyway, and the stub tells Codex the skill was removed: delete
+  `.agents/skills/<skill>/` after the upgrade and commit.
+
+  If you ran Codex's `/import` in this base, clean up before the upgrade, or it stops on
+  conflicts. First copy `.agents/` and `.codex/` to a folder outside the base, and carry
+  any edit you made there over to `.claude/skills/<skill>/SKILL.md`,
+  `.claude/settings.json` or a skill of your own. Then delete `.agents/skills/<skill>/`
+  for each template skill and `.codex/hooks.json` (required), and every
+  `.agents/skills/source-command-*`, `.codex/hooks/` and `.codex/agents/` (advised: the
+  wrappers double the skill list and the rest is broken). If that output was committed,
+  delete it with `git rm -r` and commit the deletion. Keep your own skills under
+  `.agents/skills/`: the upgrade leaves them alone.
+- **`/b:watch`: a recurring status check for tool notes.** A tool note goes out of date
+  without anyone noticing: the project ships a rewrite, gets archived, renamed or
+  relicensed. `/b:watch` (the `brain-watch` skill) checks every `type: tool` note in two
+  passes. A cheap pass reads GitHub (archived, renamed, licence, latest release, last push)
+  or the product URL and compares it with a snapshot in `content/_outputs/watch/`; only a
+  change is flagged. Web-search agents then research the flagged notes plus up to
+  `--deep-budget` notes that are due (never checked, or checked 90 or more days ago). The
+  skill writes only a "Status check YYYY-MM-DD" box under each researched note's H1 and its
+  `status-checked` / `project-status` frontmatter, adds `repo:` or `homepage:` once to
+  notes that have neither, and writes a report to `content/_outputs/reports/` with the
+  notes to refresh (`/b:enhance`) and to retire (`/b:curate`). It never moves a note and
+  holds back any line that contains a term from the "Always cut" section of
+  `content/_privacy.md` or of the new, git-ignored `content/_privacy.local.md`. Run it by
+  hand, or on a schedule (monthly works): an unattended run asks nothing.
+
+  Existing bases: after `/b:upgrade`, run `/b:watch --dry` to see which notes it tracks
+  and which need a `repo:` / `homepage:` link (or `watch: false`). Put names that must not
+  even appear in the repository in `content/_privacy.local.md`; `.gitignore` now ignores
+  it and the watch workspaces (`content/_raw/research-workspaces/watch-*/`).
+
+### Changed
+- **`/b:export --public` also cuts the names in `content/_privacy.local.md`.** The export
+  took its private terms from `content/_privacy.md` only, so a public bundle kept a client
+  name that lives only in the git-ignored local file. Now `privacy_sweep.py --terms` reads
+  the "## Always cut" section of both files, as `/b:watch` does: HTML comments are ignored,
+  each term also matches joined, hyphenated and underscored (`Acme Labs` → `acmelabs`,
+  `acme-labs`, `acme_labs`), and case does not matter. The redaction step cuts that list,
+  and the sweep flags any term that survived, in a note's text or its path. Its context
+  lines mask each term as `[private]`, and the redaction report (committed with the vault)
+  never quotes one. The verdict table shows how many terms came from each file, so a
+  checkout without the local file, such as a fresh git worktree, is easy to spot. The
+  sweep now runs from the vault root or with `--root <vault>`, and exits 1 when it finds
+  no `content/` there.
+
+  Existing bases: nothing to do; `/b:upgrade` brings the new skill. `content/_privacy.md`
+  is yours, so its starter text is unchanged in your base: names that must not even be
+  committed go in `content/_privacy.local.md`, under a `## Always cut` heading.
+
+### Fixed
+- **Two skill descriptions are read whole again.** In `brain-export`, an unquoted ` #`
+  started a YAML comment, so the skill list showed 49 of the description's 452
+  characters. In `brain-ingest`, a `: ` made the frontmatter invalid YAML, which some
+  parsers repair and others reject. Both descriptions are now quoted, with the same text.
+  The `brain-export` and `brain-import` descriptions also name the template's commands,
+  `/b:import` and `/b:export`, instead of `/import` and `/export`: in Codex, `/import` is
+  the command that converts a Claude Code project.
+
+  Existing bases: nothing to do; `/b:upgrade` brings the fix. If you edited one of these
+  three `SKILL.md` files, the upgrade asks what to keep.
+
+### Security
+- **`/b:watch` writes what web pages say as text, not as markup.** The status box is
+  built from what the research agents read on web pages and in release notes, and it is
+  published. Quartz renders raw HTML, and its Obsidian plugin turns `==highlight==` and
+  `![[embed|alias]]` back into HTML after decoding entities, so a `<script>` or
+  `<img onerror=…>` in a result could have run on your site. Now every box line (results,
+  `overrides.json` lines, and `digest.json` again when `apply` writes it) has `<`, `>` and
+  character references escaped. A link is kept only to a plain http(s) URL, an image
+  becomes a link, and `[[wikilinks]]` survive only as a plain link to a tracked note.
+  `==`, `%%`, `#tags` and link definitions are broken up. The report escapes GitHub text
+  (release tags, licences) the same way and keeps its own `<details>` list.
+- **The `/b:watch` snapshot no longer names a private repo or site.** The snapshot in
+  `content/_outputs/watch/` is committed. A repo or URL that contains an "Always cut" term
+  is now stored under a hash keyed with your private terms, and a value that contains one
+  (a renamed repo's name, a release tag) is left out. Changing the terms resets those
+  entries once.
+- **`/b:watch` checks private terms before it escapes, and again at `apply`.** Escaping
+  can split a term (`Team #2` gets a no-break space), so a release tag with one in it could
+  reach the report. The report now checks each value as it came in. `apply` checks
+  `digest.json` again, since it may have been translated in between, and holds back a note
+  whose lines match or whose status is not one it knows.
+- **Private terms also match without Polish letters**, in `/b:watch` and in
+  `/b:export --public`. Names in folder slugs and URLs are usually written without them,
+  so `Łąka Wiśnia` now also matches `laka-wisnia` and `Laka Wisnia` (`ł` → `l`, other
+  diacritics dropped). A name that leaves fewer than four letters keeps only its written
+  form, so a short term like `Wąs` does not catch the English "was".
+
+  Existing bases: nothing to do; `/b:upgrade` brings the fix. The next `/b:watch` run
+  rewrites the snapshot, hashing any private entry an earlier run wrote in clear.
+
 ## [0.3.0] - 2026-11-13
 
 A quality package for what the agent writes into your base. Ingest now shows its plan
